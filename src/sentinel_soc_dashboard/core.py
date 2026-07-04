@@ -6,9 +6,28 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 
 SEVERITY_WEIGHT = {"critical": 100, "high": 75, "medium": 45, "low": 20}
+DEFAULT_CONFIG = {
+    "severity_weight": SEVERITY_WEIGHT,
+    "volume_points_per_alert": 8,
+    "max_volume_score": 40,
+    "tactic_diversity_points": 5,
+    "sla": {
+        "critical": "Immediate escalation",
+        "high": "Investigate within 4 hours",
+        "medium": "Investigate within 1 business day",
+        "low": "Monitor during normal queue review",
+    },
+}
+TACTIC_TO_MITRE = {
+    "Credential Access": "T1110 - Brute Force",
+    "Initial Access": "T1078 - Valid Accounts",
+    "Execution": "T1059 - Command and Scripting Interpreter",
+    "Reconnaissance": "T1595 - Active Scanning",
+}
 
 
 @dataclass(frozen=True)
@@ -21,6 +40,29 @@ class Alert:
     user: str
     tactic: str
     status: str = "open"
+
+
+@dataclass(frozen=True)
+class TriageConfig:
+    severity_weight: dict[str, int]
+    volume_points_per_alert: int
+    max_volume_score: int
+    tactic_diversity_points: int
+    sla: dict[str, str]
+
+
+def load_config(path: str | Path | None = None) -> TriageConfig:
+    raw = DEFAULT_CONFIG | {}
+    if path:
+        override = json.loads(Path(path).read_text(encoding="utf-8"))
+        raw.update(override)
+    return TriageConfig(
+        severity_weight={key.lower(): int(value) for key, value in raw["severity_weight"].items()},
+        volume_points_per_alert=int(raw["volume_points_per_alert"]),
+        max_volume_score=int(raw["max_volume_score"]),
+        tactic_diversity_points=int(raw["tactic_diversity_points"]),
+        sla={key.lower(): value for key, value in raw["sla"].items()},
+    )
 
 
 def load_alerts(path: str | Path) -> list[Alert]:
@@ -40,25 +82,30 @@ def load_alerts(path: str | Path) -> list[Alert]:
     ]
 
 
-def triage(alerts: list[Alert]) -> list[dict[str, object]]:
+def triage(alerts: list[Alert], config: TriageConfig | None = None) -> list[dict[str, object]]:
+    config = config or load_config()
     grouped: dict[tuple[str, str], list[Alert]] = defaultdict(list)
     for alert in alerts:
         grouped[(alert.source_ip, alert.host)].append(alert)
 
     cases = []
     for (source_ip, host), items in grouped.items():
-        severity_score = max(SEVERITY_WEIGHT.get(item.severity, 0) for item in items)
-        volume_score = min(len(items) * 8, 40)
+        severity_score = max(config.severity_weight.get(item.severity, 0) for item in items)
+        volume_score = min(len(items) * config.volume_points_per_alert, config.max_volume_score)
         tactics = sorted({item.tactic for item in items})
-        priority = min(severity_score + volume_score + len(tactics) * 5, 100)
+        priority = min(severity_score + volume_score + len(tactics) * config.tactic_diversity_points, 100)
+        top_alert = max(items, key=lambda item: config.severity_weight.get(item.severity, 0))
         cases.append(
             {
                 "source_ip": source_ip,
                 "host": host,
                 "alert_count": len(items),
-                "top_severity": max(items, key=lambda item: SEVERITY_WEIGHT.get(item.severity, 0)).severity,
+                "top_severity": top_alert.severity,
                 "tactics": ", ".join(tactics),
+                "mitre": ", ".join(TACTIC_TO_MITRE.get(tactic, "Unmapped") for tactic in tactics),
                 "priority": priority,
+                "sla": config.sla.get(top_alert.severity, "Review using team SLA"),
+                "evidence": [item.title for item in items],
                 "recommended_action": recommendation(priority),
             }
         )
@@ -85,11 +132,43 @@ def summary(alerts: list[Alert]) -> dict[str, object]:
 
 
 def write_csv(cases: list[dict[str, object]], path: str | Path) -> None:
-    fieldnames = ["source_ip", "host", "alert_count", "top_severity", "tactics", "priority", "recommended_action"]
+    fieldnames = [
+        "source_ip",
+        "host",
+        "alert_count",
+        "top_severity",
+        "tactics",
+        "mitre",
+        "priority",
+        "sla",
+        "recommended_action",
+    ]
     with Path(path).open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(cases)
+        for case in cases:
+            writer.writerow({key: case[key] for key in fieldnames})
+
+
+def write_json(cases: list[dict[str, object]], path: str | Path) -> None:
+    Path(path).write_text(json.dumps(cases, indent=2), encoding="utf-8")
+
+
+def write_markdown(cases: list[dict[str, object]], path: str | Path) -> None:
+    rows = "\n".join(
+        f"| {case['priority']} | {case['sla']} | {case['source_ip']} | {case['host']} | "
+        f"{case['top_severity']} | {case['mitre']} |"
+        for case in cases
+    )
+    Path(path).write_text(
+        f"""# SOC Case Prioritization Report
+
+| Priority | SLA | Source IP | Host | Severity | MITRE Context |
+| --- | --- | --- | --- | --- | --- |
+{rows}
+""",
+        encoding="utf-8",
+    )
 
 
 def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | Path) -> None:
@@ -97,7 +176,7 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
     rows = "\n".join(
         f"<tr><td>{case['priority']}</td><td>{case['source_ip']}</td><td>{case['host']}</td>"
         f"<td>{case['top_severity']}</td><td>{case['alert_count']}</td><td>{case['tactics']}</td>"
-        f"<td>{case['recommended_action']}</td></tr>"
+        f"<td>{case['mitre']}</td><td>{case['sla']}</td><td>{case['recommended_action']}</td></tr>"
         for case in cases
     )
     html = f"""<!doctype html>
@@ -112,10 +191,12 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
     table {{ width: 100%; border-collapse: collapse; margin-top: 24px; }}
     th, td {{ border-bottom: 1px solid #d8dee9; padding: 10px; text-align: left; vertical-align: top; }}
     th {{ background: #edf2f7; }}
+    .note {{ background: #eef6ff; border-left: 4px solid #2563eb; padding: 12px; margin-top: 20px; }}
   </style>
 </head>
 <body>
   <h1>SOC Alert Triage Report</h1>
+  <p class="note">This report prioritizes alerts by severity, volume, tactic diversity, and analyst SLA. It is intended for defensive triage and portfolio demonstration.</p>
   <div class="metrics">
     <div class="metric"><strong>Total Alerts</strong><br>{counts['total_alerts']}</div>
     <div class="metric"><strong>Open Alerts</strong><br>{counts['open_alerts']}</div>
@@ -123,10 +204,17 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
   </div>
   <h2>Prioritized Cases</h2>
   <table>
-    <thead><tr><th>Priority</th><th>Source IP</th><th>Host</th><th>Severity</th><th>Alerts</th><th>Tactics</th><th>Action</th></tr></thead>
+    <thead><tr><th>Priority</th><th>Source IP</th><th>Host</th><th>Severity</th><th>Alerts</th><th>Tactics</th><th>MITRE</th><th>SLA</th><th>Action</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
 </body>
 </html>
 """
     Path(path).write_text(html, encoding="utf-8")
+
+
+def case_summary(case: dict[str, Any]) -> str:
+    return (
+        f"Priority {case['priority']} case on {case['host']} from {case['source_ip']} "
+        f"with {case['alert_count']} alert(s), mapped to {case['mitre']}."
+    )

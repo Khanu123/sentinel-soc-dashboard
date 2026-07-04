@@ -1,6 +1,6 @@
 import unittest
 
-from sentinel_soc_dashboard.core import Alert, recommendation, triage
+from sentinel_soc_dashboard.core import Alert, case_summary, load_config, recommendation, triage
 from datetime import datetime
 
 
@@ -18,6 +18,25 @@ class SocTriageTests(unittest.TestCase):
 
     def test_recommendation_escalates_highest_priority(self):
         self.assertIn("Escalate", recommendation(95))
+
+    def test_case_contains_mitre_and_sla_context(self):
+        alerts = [
+            Alert(
+                datetime(2026, 7, 4, 9, 0),
+                "Successful login after failures",
+                "critical",
+                "1.1.1.1",
+                "web-01",
+                "admin",
+                "Initial Access",
+            )
+        ]
+
+        case = triage(alerts, load_config())[0]
+
+        self.assertIn("T1078", case["mitre"])
+        self.assertEqual(case["sla"], "Immediate escalation")
+        self.assertIn("Priority", case_summary(case))
 
 
 if __name__ == "__main__":

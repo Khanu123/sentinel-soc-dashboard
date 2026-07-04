@@ -1,0 +1,17 @@
+{
+  "severity_weight": {
+    "critical": 100,
+    "high": 75,
+    "medium": 45,
+    "low": 20
+  },
+  "volume_points_per_alert": 8,
+  "max_volume_score": 40,
+  "tactic_diversity_points": 5,
+  "sla": {
+    "critical": "Immediate escalation",
+    "high": "Investigate within 4 hours",
+    "medium": "Investigate within 1 business day",
+    "low": "Monitor during normal queue review"
+  }
+}

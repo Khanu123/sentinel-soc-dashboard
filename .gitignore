@@ -2,4 +2,6 @@ __pycache__/
 *.py[cod]
 .venv/
 soc_report.html
+soc_report.md
 soc_cases.csv
+soc_cases.json
