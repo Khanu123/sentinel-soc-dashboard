@@ -1,0 +1,42 @@
+[
+  {
+    "timestamp": "2026-07-04T09:15:22",
+    "title": "Multiple failed SSH logins",
+    "severity": "high",
+    "source_ip": "198.51.100.44",
+    "host": "web-01",
+    "user": "admin",
+    "tactic": "Credential Access",
+    "status": "open"
+  },
+  {
+    "timestamp": "2026-07-04T09:17:41",
+    "title": "Successful login after failures",
+    "severity": "critical",
+    "source_ip": "198.51.100.44",
+    "host": "web-01",
+    "user": "admin",
+    "tactic": "Initial Access",
+    "status": "open"
+  },
+  {
+    "timestamp": "2026-07-04T10:03:10",
+    "title": "Suspicious PowerShell encoded command",
+    "severity": "high",
+    "source_ip": "10.0.4.22",
+    "host": "win-07",
+    "user": "umar",
+    "tactic": "Execution",
+    "status": "open"
+  },
+  {
+    "timestamp": "2026-07-04T10:09:59",
+    "title": "Known scanner user-agent",
+    "severity": "low",
+    "source_ip": "203.0.113.9",
+    "host": "portal-01",
+    "user": "-",
+    "tactic": "Reconnaissance",
+    "status": "closed"
+  }
+]
