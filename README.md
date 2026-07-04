@@ -49,7 +49,7 @@ Markdown report: soc_report.md
 - [Case Study](docs/case-study.md)
 - [Architecture](docs/architecture.md)
 - [Interview Notes](INTERVIEW_NOTES.md)
-- [Example Report](docs/examples/soc_report.md)
+- [Example Report](docs/examples/example_soc_report.md)
 
 ## Skills Demonstrated
 
