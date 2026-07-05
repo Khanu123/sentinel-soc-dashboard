@@ -48,6 +48,7 @@ Markdown report: soc_report.md
 
 - [Case Study](docs/case-study.md)
 - [Architecture](docs/architecture.md)
+- [Blog Writeup](docs/how-i-built-soc-alert-triage-tool.md)
 - [Interview Notes](INTERVIEW_NOTES.md)
 - [Example Report](docs/examples/example_soc_report.md)
 
