@@ -1,0 +1,118 @@
+[
+  {
+    "source_ip": "198.51.100.44",
+    "host": "web-01",
+    "alert_count": 2,
+    "open_alert_count": 2,
+    "closed_alert_count": 0,
+    "top_severity": "critical",
+    "tactics": "Credential Access, Initial Access",
+    "mitre": "T1110 - Brute Force, T1078 - Valid Accounts",
+    "priority": 100,
+    "sla": "Immediate escalation",
+    "evidence": [
+      "Multiple failed SSH logins against web server",
+      "Successful login after repeated failures"
+    ],
+    "iocs": [
+      "198.51.100.44",
+      "admin"
+    ],
+    "analyst_notes": "Repeated failures against a privileged account from an external address. Success after failures increases likelihood of account compromise.",
+    "false_positive_handling": "Check before escalation: Check change ticket or emergency access record before containment. Confirm whether this IP belongs to an approved administrator VPN range.",
+    "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity."
+  },
+  {
+    "source_ip": "10.0.4.22",
+    "host": "win-07",
+    "alert_count": 2,
+    "open_alert_count": 2,
+    "closed_alert_count": 0,
+    "top_severity": "high",
+    "tactics": "Command and Control, Execution",
+    "mitre": "T1071 - Application Layer Protocol, T1059 - Command and Scripting Interpreter",
+    "priority": 100,
+    "sla": "Investigate within 4 hours",
+    "evidence": [
+      "Suspicious PowerShell encoded command",
+      "PowerShell spawned network connection"
+    ],
+    "iocs": [
+      "-enc",
+      "203.0.113.55",
+      "powershell.exe"
+    ],
+    "analyst_notes": "Encoded command execution should be correlated with parent process and recent downloads. Network activity following encoded execution should be treated as suspicious until validated.",
+    "false_positive_handling": "Check before escalation: Some admin tools use encoded PowerShell during endpoint management. Verify whether destination is part of a known software update or management service.",
+    "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity."
+  },
+  {
+    "source_ip": "10.0.7.19",
+    "host": "finance-ws-03",
+    "alert_count": 2,
+    "open_alert_count": 2,
+    "closed_alert_count": 0,
+    "top_severity": "medium",
+    "tactics": "Discovery, Exfiltration",
+    "mitre": "T1087 - Account Discovery, T1041 - Exfiltration Over C2 Channel",
+    "priority": 71,
+    "sla": "Investigate within 1 business day",
+    "evidence": [
+      "Unusual account discovery command",
+      "Suspicious archive creation after discovery"
+    ],
+    "iocs": [
+      "7z.exe",
+      "finance_exports.zip",
+      "j.smith",
+      "net user"
+    ],
+    "analyst_notes": "Discovery from a finance workstation should be reviewed with recent login and process history. Archive creation after discovery may indicate staging activity.",
+    "false_positive_handling": "Check before escalation: Check whether IT support was troubleshooting local account permissions. Confirm whether the user was performing an approved finance export.",
+    "recommended_action": "Investigate within SLA, enrich source IP, and validate endpoint telemetry."
+  },
+  {
+    "source_ip": "10.0.3.11",
+    "host": "hr-laptop-12",
+    "alert_count": 1,
+    "open_alert_count": 0,
+    "closed_alert_count": 1,
+    "top_severity": "medium",
+    "tactics": "Defense Evasion",
+    "mitre": "T1027 - Obfuscated Files or Information",
+    "priority": 58,
+    "sla": "Investigate within 1 business day",
+    "evidence": [
+      "Obfuscated script blocked by endpoint control"
+    ],
+    "iocs": [
+      "invoice.vbs",
+      "wscript.exe"
+    ],
+    "analyst_notes": "Blocked execution still needs user-awareness follow-up if delivered through email.",
+    "false_positive_handling": "Check before escalation: Review file hash and email gateway verdict before closing as prevented.",
+    "recommended_action": "Queue for analyst review and correlate with recent authentication events."
+  },
+  {
+    "source_ip": "203.0.113.9",
+    "host": "portal-01",
+    "alert_count": 1,
+    "open_alert_count": 0,
+    "closed_alert_count": 1,
+    "top_severity": "low",
+    "tactics": "Reconnaissance",
+    "mitre": "T1595 - Active Scanning",
+    "priority": 33,
+    "sla": "Monitor during normal queue review",
+    "evidence": [
+      "Known scanner user-agent observed"
+    ],
+    "iocs": [
+      "203.0.113.9",
+      "scanner-user-agent"
+    ],
+    "analyst_notes": "Low-confidence internet scanning pattern with no authentication attempt.",
+    "false_positive_handling": "Check before escalation: Confirm this is not the company vulnerability scanner before blocking.",
+    "recommended_action": "Monitor and close if no additional suspicious activity appears."
+  }
+]

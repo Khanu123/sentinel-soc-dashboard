@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SOC Triage Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #14213d; background: #f8fafc; }
+    h1 { margin-bottom: 8px; }
+    .metrics { display: flex; gap: 12px; flex-wrap: wrap; }
+    .metric { background: white; border: 1px solid #d8dee9; border-radius: 8px; padding: 16px; min-width: 150px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+    th, td { background: white; border-bottom: 1px solid #d8dee9; padding: 10px; text-align: left; vertical-align: top; }
+    th { background: #e0f2fe; color: #075985; }
+    .note { background: #eef6ff; border-left: 4px solid #2563eb; padding: 12px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>SOC Alert Triage Report</h1>
+  <p class="note">This report prioritizes alerts by severity, volume, tactic diversity, and analyst SLA. It is intended for defensive triage and portfolio demonstration.</p>
+  <div class="metrics">
+    <div class="metric"><strong>Total Alerts</strong><br>8</div>
+    <div class="metric"><strong>Open Alerts</strong><br>6</div>
+    <div class="metric"><strong>Cases</strong><br>5</div>
+  </div>
+  <h2>Prioritized Cases</h2>
+  <table>
+    <thead><tr><th>Priority</th><th>Source IP</th><th>Host</th><th>Severity</th><th>Alerts</th><th>Tactics</th><th>MITRE</th><th>SLA</th><th>Analyst Action</th></tr></thead>
+    <tbody><tr><td>100</td><td>198.51.100.44</td><td>web-01</td><td>critical</td><td>2 open / 2 total</td><td>Credential Access, Initial Access</td><td>T1110 - Brute Force, T1078 - Valid Accounts</td><td>Immediate escalation</td><td>Escalate immediately, isolate host, preserve evidence, and review account activity.<br><strong>Notes:</strong> Repeated failures against a privileged account from an external address. Success after failures increases likelihood of account compromise.<br><strong>FP check:</strong> Check before escalation: Check change ticket or emergency access record before containment. Confirm whether this IP belongs to an approved administrator VPN range.</td></tr>
+<tr><td>100</td><td>10.0.4.22</td><td>win-07</td><td>high</td><td>2 open / 2 total</td><td>Command and Control, Execution</td><td>T1071 - Application Layer Protocol, T1059 - Command and Scripting Interpreter</td><td>Investigate within 4 hours</td><td>Escalate immediately, isolate host, preserve evidence, and review account activity.<br><strong>Notes:</strong> Encoded command execution should be correlated with parent process and recent downloads. Network activity following encoded execution should be treated as suspicious until validated.<br><strong>FP check:</strong> Check before escalation: Some admin tools use encoded PowerShell during endpoint management. Verify whether destination is part of a known software update or management service.</td></tr>
+<tr><td>71</td><td>10.0.7.19</td><td>finance-ws-03</td><td>medium</td><td>2 open / 2 total</td><td>Discovery, Exfiltration</td><td>T1087 - Account Discovery, T1041 - Exfiltration Over C2 Channel</td><td>Investigate within 1 business day</td><td>Investigate within SLA, enrich source IP, and validate endpoint telemetry.<br><strong>Notes:</strong> Discovery from a finance workstation should be reviewed with recent login and process history. Archive creation after discovery may indicate staging activity.<br><strong>FP check:</strong> Check before escalation: Check whether IT support was troubleshooting local account permissions. Confirm whether the user was performing an approved finance export.</td></tr>
+<tr><td>58</td><td>10.0.3.11</td><td>hr-laptop-12</td><td>medium</td><td>0 open / 1 total</td><td>Defense Evasion</td><td>T1027 - Obfuscated Files or Information</td><td>Investigate within 1 business day</td><td>Queue for analyst review and correlate with recent authentication events.<br><strong>Notes:</strong> Blocked execution still needs user-awareness follow-up if delivered through email.<br><strong>FP check:</strong> Check before escalation: Review file hash and email gateway verdict before closing as prevented.</td></tr>
+<tr><td>33</td><td>203.0.113.9</td><td>portal-01</td><td>low</td><td>0 open / 1 total</td><td>Reconnaissance</td><td>T1595 - Active Scanning</td><td>Monitor during normal queue review</td><td>Monitor and close if no additional suspicious activity appears.<br><strong>Notes:</strong> Low-confidence internet scanning pattern with no authentication attempt.<br><strong>FP check:</strong> Check before escalation: Confirm this is not the company vulnerability scanner before blocking.</td></tr></tbody>
+  </table>
+</body>
+</html>
