@@ -1,5 +1,9 @@
 # Sentinel SOC Dashboard
 
+![Project Type](https://img.shields.io/badge/Project-Flagship-blue) ![Focus](https://img.shields.io/badge/Focus-SOC%20Triage-green) ![Difficulty](https://img.shields.io/badge/Difficulty-Advanced-orange)
+
+![Report preview](docs/screenshots/report-preview.png)
+
 [![tests](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml/badge.svg)](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Status](https://img.shields.io/badge/status-portfolio_project-brightgreen)
