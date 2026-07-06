@@ -23,6 +23,10 @@ Security teams do not only need alerts; they need prioritization. This project s
 - Exports analyst-ready HTML, CSV, JSON, and Markdown reports.
 - Includes sample data and tests.
 
+## Active Roadmap
+
+See [Roadmap](ROADMAP.md) for planned improvements and maintenance direction.
+
 ## Quick Start
 
 ```bash
