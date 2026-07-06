@@ -1,7 +1,9 @@
 # SOC Case Prioritization Report
 
-| Priority | SLA | Source IP | Host | Severity | MITRE Context |
-| --- | --- | --- | --- | --- | --- |
-| 100 | Immediate escalation | 198.51.100.44 | web-01 | critical | T1110 - Brute Force, T1078 - Valid Accounts |
-| 88 | Investigate within 4 hours | 10.0.4.22 | win-07 | high | T1059 - Command and Scripting Interpreter |
-| 33 | Monitor during normal queue review | 203.0.113.9 | portal-01 | low | T1595 - Active Scanning |
+| Priority | SLA | Source IP | Host | Severity | MITRE Context | Analyst Action | False-Positive Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 100 | Immediate escalation | 198.51.100.44 | web-01 | critical | T1110 - Brute Force, T1078 - Valid Accounts | Escalate immediately, isolate host, preserve evidence, and review account activity. | Check before escalation: Check change ticket or emergency access record before containment. Confirm whether this IP belongs to an approved administrator VPN range. |
+| 100 | Investigate within 4 hours | 10.0.4.22 | win-07 | high | T1071 - Application Layer Protocol, T1059 - Command and Scripting Interpreter | Escalate immediately, isolate host, preserve evidence, and review account activity. | Check before escalation: Some admin tools use encoded PowerShell during endpoint management. Verify whether destination is part of a known software update or management service. |
+| 71 | Investigate within 1 business day | 10.0.7.19 | finance-ws-03 | medium | T1087 - Account Discovery, T1041 - Exfiltration Over C2 Channel | Investigate within SLA, enrich source IP, and validate endpoint telemetry. | Check before escalation: Check whether IT support was troubleshooting local account permissions. Confirm whether the user was performing an approved finance export. |
+| 58 | Investigate within 1 business day | 10.0.3.11 | hr-laptop-12 | medium | T1027 - Obfuscated Files or Information | Queue for analyst review and correlate with recent authentication events. | Check before escalation: Review file hash and email gateway verdict before closing as prevented. |
+| 33 | Monitor during normal queue review | 203.0.113.9 | portal-01 | low | T1595 - Active Scanning | Monitor and close if no additional suspicious activity appears. | Check before escalation: Confirm this is not the company vulnerability scanner before blocking. |

@@ -1,38 +1,84 @@
 # Sentinel SOC Dashboard
 
-![Project Type](https://img.shields.io/badge/Project-Flagship-blue) ![Focus](https://img.shields.io/badge/Focus-SOC%20Triage-green) ![Difficulty](https://img.shields.io/badge/Difficulty-Advanced-orange)
+![Project Type](https://img.shields.io/badge/Project-Flagship-blue)
+![Focus](https://img.shields.io/badge/Focus-SOC%20Triage-green)
+![Difficulty](https://img.shields.io/badge/Difficulty-Advanced-orange)
+[![tests](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml/badge.svg)](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Status](https://img.shields.io/badge/status-active_portfolio_project-brightgreen)
 
 ![Report preview](docs/screenshots/report-preview.png)
 
-[![tests](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml/badge.svg)](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Status](https://img.shields.io/badge/status-portfolio_project-brightgreen)
+Sentinel SOC Dashboard is a defensive security project that turns raw alert data into prioritized analyst cases. It is designed to show practical SOC thinking: grouping related alerts, mapping MITRE ATT&CK context, scoring severity, recording analyst notes, handling possible false positives, and exporting reports that a junior analyst could use during triage.
 
-Sentinel SOC Dashboard turns raw security alerts into prioritized analyst cases. It is a blue-team portfolio project designed to show alert triage, severity scoring, reporting, and SOC-style thinking.
+## Why This Project Matters
 
-## Why Employers Like This
+SOC teams do not need another noisy alert list. They need clear prioritization, evidence, next actions, and a way to explain why a case should be escalated or monitored. This project demonstrates that workflow in a safe synthetic lab.
 
-Security teams do not only need alerts; they need prioritization. This project shows that you understand analyst workflow, escalation, evidence, and business-friendly reporting.
+This is the project I would lead with in interviews because it shows:
 
-## Features
+- Practical blue-team mindset.
+- Python automation beyond basic scripts.
+- MITRE ATT&CK awareness.
+- Severity and SLA-based triage.
+- False-positive review habits.
+- Exportable reports for analyst and stakeholder communication.
+- Tests and sample data that make the project easy to evaluate.
 
-- Loads alert data from JSON.
-- Groups related alerts into cases by source IP and host.
-- Scores cases using severity, volume, tactic diversity, and configurable SLA logic.
-- Maps tactics to MITRE ATT&CK context.
-- Exports analyst-ready HTML, CSV, JSON, and Markdown reports.
-- Includes sample data and tests.
+## Current Capabilities
 
-## Active Roadmap
+- Loads safe synthetic SOC alert data from JSON.
+- Groups related alerts into cases by source IP and affected host.
+- Scores cases using top severity, alert volume, and tactic diversity.
+- Maps tactics to MITRE ATT&CK techniques.
+- Adds analyst notes and false-positive handling guidance.
+- Tracks open and closed alert counts inside each case.
+- Extracts simple indicators of compromise from sample alerts.
+- Exports HTML, CSV, JSON, and Markdown incident reports.
+- Includes unit tests for scoring, MITRE mapping, notes, false-positive handling, and sample data loading.
 
-See [Roadmap](ROADMAP.md) for planned improvements and maintenance direction.
+## Example Analyst Output
+
+```text
+Loaded 8 alerts.
+Created 5 prioritized cases.
+HTML report: docs/examples/soc_report.html
+CSV report: docs/examples/soc_cases.csv
+JSON report: docs/examples/soc_cases.json
+Markdown report: docs/examples/example_soc_report.md
+```
+
+Example case fields:
+
+| Field | Purpose |
+| --- | --- |
+| `priority` | Sorts the analyst queue by urgency |
+| `mitre` | Shows ATT&CK context for investigation |
+| `sla` | Gives the response expectation |
+| `analyst_notes` | Explains what to validate next |
+| `false_positive_handling` | Forces a check before over-escalation |
+| `recommended_action` | Gives the next triage step |
 
 ## Quick Start
 
 ```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
 set PYTHONPATH=src
 python -m sentinel_soc_dashboard.cli
 python -m unittest discover -s tests -v
+```
+
+Use custom output paths:
+
+```bash
+python -m sentinel_soc_dashboard.cli ^
+  --alerts sample_data/alerts.json ^
+  --html docs/examples/soc_report.html ^
+  --csv docs/examples/soc_cases.csv ^
+  --json docs/examples/soc_cases.json ^
+  --markdown docs/examples/example_soc_report.md
 ```
 
 Use custom scoring:
@@ -41,33 +87,49 @@ Use custom scoring:
 python -m sentinel_soc_dashboard.cli --config config.example.json
 ```
 
-## Example Output
+## How It Helps a SOC Analyst
 
-```text
-Loaded 4 alerts.
-Created 3 prioritized cases.
-HTML report: soc_report.html
-CSV report: soc_cases.csv
-JSON report: soc_cases.json
-Markdown report: soc_report.md
-```
+1. A raw stream of alerts is loaded from `sample_data/alerts.json`.
+2. Alerts are normalized into consistent Python objects.
+3. Related alerts are grouped by source IP and affected host.
+4. Each group becomes a case with severity, volume, and MITRE context.
+5. The tool adds analyst notes, false-positive checks, SLA guidance, and recommended actions.
+6. Reports are exported so the findings can be reviewed, shared, or attached to a case record.
+
+## Sample Data
+
+The sample dataset is synthetic and safe. It includes examples such as:
+
+- SSH brute-force followed by successful login.
+- Encoded PowerShell and suspicious network activity.
+- Web scanner activity that may be benign.
+- Account discovery and possible archive staging.
+- Blocked obfuscated script execution.
+
+No real customer data, credentials, exploit code, or live scanning is included.
 
 ## Documentation
 
-- [Case Study](docs/case-study.md)
+- [Example HTML Report](docs/examples/soc_report.html)
+- [Example Markdown Report](docs/examples/example_soc_report.md)
 - [Architecture](docs/architecture.md)
-- [Blog Writeup](docs/how-i-built-soc-alert-triage-tool.md)
+- [Case Study](docs/case-study.md)
+- [How I Built a SOC Alert Triage Tool](docs/how-i-built-soc-alert-triage-tool.md)
 - [Interview Notes](INTERVIEW_NOTES.md)
-- [Example Report](docs/examples/example_soc_report.md)
+- [Roadmap](ROADMAP.md)
 
 ## Skills Demonstrated
 
-- Python data processing
-- Alert triage logic
-- SOC workflow awareness
-- Reporting
-- Unit testing
+- Python data processing.
+- Defensive security automation.
+- SOC alert triage workflow.
+- MITRE ATT&CK mapping.
+- Risk scoring and SLA logic.
+- Security reporting.
+- Unit testing.
+- GitHub Actions.
+- Clear technical documentation.
 
 ## Responsible Use
 
-This project is defensive. It analyzes alert data and does not perform scanning, exploitation, or intrusive actions.
+This project is defensive. It analyzes provided alert data and does not perform scanning, exploitation, credential attacks, or intrusive actions. All sample data is synthetic and intended for learning, portfolio review, and interview discussion.

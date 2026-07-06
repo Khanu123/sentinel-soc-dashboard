@@ -27,6 +27,10 @@ TACTIC_TO_MITRE = {
     "Initial Access": "T1078 - Valid Accounts",
     "Execution": "T1059 - Command and Scripting Interpreter",
     "Reconnaissance": "T1595 - Active Scanning",
+    "Defense Evasion": "T1027 - Obfuscated Files or Information",
+    "Discovery": "T1087 - Account Discovery",
+    "Command and Control": "T1071 - Application Layer Protocol",
+    "Exfiltration": "T1041 - Exfiltration Over C2 Channel",
 }
 
 
@@ -40,6 +44,11 @@ class Alert:
     user: str
     tactic: str
     status: str = "open"
+    source: str = "siem"
+    confidence: str = "medium"
+    false_positive_hint: str = ""
+    analyst_note: str = ""
+    iocs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -77,6 +86,11 @@ def load_alerts(path: str | Path) -> list[Alert]:
             user=row.get("user", ""),
             tactic=row.get("tactic", "unknown"),
             status=row.get("status", "open"),
+            source=row.get("source", "siem"),
+            confidence=row.get("confidence", "medium"),
+            false_positive_hint=row.get("false_positive_hint", ""),
+            analyst_note=row.get("analyst_note", ""),
+            iocs=tuple(row.get("iocs", [])),
         )
         for row in rows
     ]
@@ -95,17 +109,25 @@ def triage(alerts: list[Alert], config: TriageConfig | None = None) -> list[dict
         tactics = sorted({item.tactic for item in items})
         priority = min(severity_score + volume_score + len(tactics) * config.tactic_diversity_points, 100)
         top_alert = max(items, key=lambda item: config.severity_weight.get(item.severity, 0))
+        open_items = [item for item in items if item.status == "open"]
+        closed_items = [item for item in items if item.status != "open"]
+        iocs = sorted({ioc for item in items for ioc in item.iocs})
         cases.append(
             {
                 "source_ip": source_ip,
                 "host": host,
                 "alert_count": len(items),
+                "open_alert_count": len(open_items),
+                "closed_alert_count": len(closed_items),
                 "top_severity": top_alert.severity,
                 "tactics": ", ".join(tactics),
                 "mitre": ", ".join(TACTIC_TO_MITRE.get(tactic, "Unmapped") for tactic in tactics),
                 "priority": priority,
                 "sla": config.sla.get(top_alert.severity, "Review using team SLA"),
                 "evidence": [item.title for item in items],
+                "iocs": iocs,
+                "analyst_notes": analyst_notes(items),
+                "false_positive_handling": false_positive_handling(items),
                 "recommended_action": recommendation(priority),
             }
         )
@@ -120,6 +142,25 @@ def recommendation(priority: int) -> str:
     if priority >= 45:
         return "Queue for analyst review and correlate with recent authentication events."
     return "Monitor and close if no additional suspicious activity appears."
+
+
+def analyst_notes(alerts: list[Alert]) -> str:
+    notes = [item.analyst_note for item in alerts if item.analyst_note]
+    if notes:
+        return " ".join(notes)
+    users = sorted({item.user for item in alerts if item.user and item.user != "-"})
+    if users:
+        return f"Review authentication and endpoint activity for: {', '.join(users)}."
+    return "Validate the alert context against endpoint, identity, and network telemetry."
+
+
+def false_positive_handling(alerts: list[Alert]) -> str:
+    hints = sorted({item.false_positive_hint for item in alerts if item.false_positive_hint})
+    if hints:
+        return "Check before escalation: " + " ".join(hints)
+    if all(item.status != "open" for item in alerts):
+        return "All related alerts are closed; verify closure reason before reopening."
+    return "Compare with known maintenance windows, approved scanners, and expected admin activity."
 
 
 def summary(alerts: list[Alert]) -> dict[str, object]:
@@ -142,6 +183,8 @@ def write_csv(cases: list[dict[str, object]], path: str | Path) -> None:
         "priority",
         "sla",
         "recommended_action",
+        "analyst_notes",
+        "false_positive_handling",
     ]
     with Path(path).open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -157,14 +200,14 @@ def write_json(cases: list[dict[str, object]], path: str | Path) -> None:
 def write_markdown(cases: list[dict[str, object]], path: str | Path) -> None:
     rows = "\n".join(
         f"| {case['priority']} | {case['sla']} | {case['source_ip']} | {case['host']} | "
-        f"{case['top_severity']} | {case['mitre']} |"
+        f"{case['top_severity']} | {case['mitre']} | {case['recommended_action']} | {case['false_positive_handling']} |"
         for case in cases
     )
     Path(path).write_text(
         f"""# SOC Case Prioritization Report
 
-| Priority | SLA | Source IP | Host | Severity | MITRE Context |
-| --- | --- | --- | --- | --- | --- |
+| Priority | SLA | Source IP | Host | Severity | MITRE Context | Analyst Action | False-Positive Handling |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 {rows}
 """,
         encoding="utf-8",
@@ -175,8 +218,10 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
     counts = summary(alerts)
     rows = "\n".join(
         f"<tr><td>{case['priority']}</td><td>{case['source_ip']}</td><td>{case['host']}</td>"
-        f"<td>{case['top_severity']}</td><td>{case['alert_count']}</td><td>{case['tactics']}</td>"
-        f"<td>{case['mitre']}</td><td>{case['sla']}</td><td>{case['recommended_action']}</td></tr>"
+        f"<td>{case['top_severity']}</td><td>{case['open_alert_count']} open / {case['alert_count']} total</td>"
+        f"<td>{case['tactics']}</td><td>{case['mitre']}</td><td>{case['sla']}</td>"
+        f"<td>{case['recommended_action']}<br><strong>Notes:</strong> {case['analyst_notes']}<br>"
+        f"<strong>FP check:</strong> {case['false_positive_handling']}</td></tr>"
         for case in cases
     )
     html = f"""<!doctype html>
@@ -185,12 +230,13 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
   <meta charset="utf-8">
   <title>SOC Triage Report</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 32px; color: #14213d; }}
+    body {{ font-family: Arial, sans-serif; margin: 32px; color: #14213d; background: #f8fafc; }}
+    h1 {{ margin-bottom: 8px; }}
     .metrics {{ display: flex; gap: 12px; flex-wrap: wrap; }}
-    .metric {{ border: 1px solid #d8dee9; border-radius: 8px; padding: 16px; min-width: 150px; }}
+    .metric {{ background: white; border: 1px solid #d8dee9; border-radius: 8px; padding: 16px; min-width: 150px; }}
     table {{ width: 100%; border-collapse: collapse; margin-top: 24px; }}
-    th, td {{ border-bottom: 1px solid #d8dee9; padding: 10px; text-align: left; vertical-align: top; }}
-    th {{ background: #edf2f7; }}
+    th, td {{ background: white; border-bottom: 1px solid #d8dee9; padding: 10px; text-align: left; vertical-align: top; }}
+    th {{ background: #e0f2fe; color: #075985; }}
     .note {{ background: #eef6ff; border-left: 4px solid #2563eb; padding: 12px; margin-top: 20px; }}
   </style>
 </head>
@@ -204,7 +250,7 @@ def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | 
   </div>
   <h2>Prioritized Cases</h2>
   <table>
-    <thead><tr><th>Priority</th><th>Source IP</th><th>Host</th><th>Severity</th><th>Alerts</th><th>Tactics</th><th>MITRE</th><th>SLA</th><th>Action</th></tr></thead>
+    <thead><tr><th>Priority</th><th>Source IP</th><th>Host</th><th>Severity</th><th>Alerts</th><th>Tactics</th><th>MITRE</th><th>SLA</th><th>Analyst Action</th></tr></thead>
     <tbody>{rows}</tbody>
   </table>
 </body>
