@@ -1,4 +1,4 @@
-# Sentinel SOC Dashboard
+﻿# Sentinel SOC Dashboard
 
 ![Project Type](https://img.shields.io/badge/Project-Flagship-blue)
 ![Focus](https://img.shields.io/badge/Focus-SOC%20Triage-green)
@@ -8,6 +8,16 @@
 ![Status](https://img.shields.io/badge/status-active_portfolio_project-brightgreen)
 
 ![Report preview](docs/screenshots/report-preview.png)
+
+## Employer Review
+
+| Area | Evidence |
+| --- | --- |
+| Target role | SOC Analyst / Security Operations |
+| Strongest proof | MITRE mapping, severity scoring, false-positive notes, exportable incident report |
+| Start here | [docs/examples/example_soc_report.md](docs/examples/example_soc_report.md) |
+| Deeper review | [docs/employer-review.md](docs/employer-review.md) |
+| Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 
 Sentinel SOC Dashboard is a defensive security project that turns raw alert data into prioritized analyst cases. It is designed to show practical SOC thinking: grouping related alerts, mapping MITRE ATT&CK context, scoring severity, recording analyst notes, handling possible false positives, and exporting reports that a junior analyst could use during triage.
 
@@ -133,3 +143,4 @@ No real customer data, credentials, exploit code, or live scanning is included.
 ## Responsible Use
 
 This project is defensive. It analyzes provided alert data and does not perform scanning, exploitation, credential attacks, or intrusive actions. All sample data is synthetic and intended for learning, portfolio review, and interview discussion.
+
