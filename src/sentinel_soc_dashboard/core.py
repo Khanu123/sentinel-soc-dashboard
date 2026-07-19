@@ -5,6 +5,7 @@ import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -61,10 +62,18 @@ class TriageConfig:
 
 
 def load_config(path: str | Path | None = None) -> TriageConfig:
-    raw = DEFAULT_CONFIG | {}
+    raw = {
+        **DEFAULT_CONFIG,
+        "severity_weight": dict(DEFAULT_CONFIG["severity_weight"]),
+        "sla": dict(DEFAULT_CONFIG["sla"]),
+    }
     if path:
         override = json.loads(Path(path).read_text(encoding="utf-8"))
-        raw.update(override)
+        for key, value in override.items():
+            if key in {"severity_weight", "sla"}:
+                raw[key].update(value)
+            else:
+                raw[key] = value
     return TriageConfig(
         severity_weight={key.lower(): int(value) for key, value in raw["severity_weight"].items()},
         volume_points_per_alert=int(raw["volume_points_per_alert"]),
@@ -76,6 +85,13 @@ def load_config(path: str | Path | None = None) -> TriageConfig:
 
 def load_alerts(path: str | Path) -> list[Alert]:
     rows = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(rows, list):
+        raise ValueError("Alert input must be a JSON array.")
+    allowed_severities = set(SEVERITY_WEIGHT)
+    for index, row in enumerate(rows):
+        severity = str(row.get("severity", "")).lower()
+        if severity not in allowed_severities:
+            raise ValueError(f"Alert {index} has unsupported severity: {severity or 'missing'}")
     return [
         Alert(
             timestamp=datetime.fromisoformat(row["timestamp"]),
@@ -173,6 +189,7 @@ def summary(alerts: list[Alert]) -> dict[str, object]:
 
 
 def write_csv(cases: list[dict[str, object]], path: str | Path) -> None:
+    _prepare_output(path)
     fieldnames = [
         "source_ip",
         "host",
@@ -194,13 +211,15 @@ def write_csv(cases: list[dict[str, object]], path: str | Path) -> None:
 
 
 def write_json(cases: list[dict[str, object]], path: str | Path) -> None:
+    _prepare_output(path)
     Path(path).write_text(json.dumps(cases, indent=2), encoding="utf-8")
 
 
 def write_markdown(cases: list[dict[str, object]], path: str | Path) -> None:
+    _prepare_output(path)
     rows = "\n".join(
-        f"| {case['priority']} | {case['sla']} | {case['source_ip']} | {case['host']} | "
-        f"{case['top_severity']} | {case['mitre']} | {case['recommended_action']} | {case['false_positive_handling']} |"
+        f"| {_md(case['priority'])} | {_md(case['sla'])} | {_md(case['source_ip'])} | {_md(case['host'])} | "
+        f"{_md(case['top_severity'])} | {_md(case['mitre'])} | {_md(case['recommended_action'])} | {_md(case['false_positive_handling'])} |"
         for case in cases
     )
     Path(path).write_text(
@@ -215,13 +234,14 @@ def write_markdown(cases: list[dict[str, object]], path: str | Path) -> None:
 
 
 def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | Path) -> None:
+    _prepare_output(path)
     counts = summary(alerts)
     rows = "\n".join(
-        f"<tr><td>{case['priority']}</td><td>{case['source_ip']}</td><td>{case['host']}</td>"
-        f"<td>{case['top_severity']}</td><td>{case['open_alert_count']} open / {case['alert_count']} total</td>"
-        f"<td>{case['tactics']}</td><td>{case['mitre']}</td><td>{case['sla']}</td>"
-        f"<td>{case['recommended_action']}<br><strong>Notes:</strong> {case['analyst_notes']}<br>"
-        f"<strong>FP check:</strong> {case['false_positive_handling']}</td></tr>"
+        f"<tr><td>{case['priority']}</td><td>{escape(str(case['source_ip']))}</td><td>{escape(str(case['host']))}</td>"
+        f"<td>{escape(str(case['top_severity']))}</td><td>{case['open_alert_count']} open / {case['alert_count']} total</td>"
+        f"<td>{escape(str(case['tactics']))}</td><td>{escape(str(case['mitre']))}</td><td>{escape(str(case['sla']))}</td>"
+        f"<td>{escape(str(case['recommended_action']))}<br><strong>Notes:</strong> {escape(str(case['analyst_notes']))}<br>"
+        f"<strong>FP check:</strong> {escape(str(case['false_positive_handling']))}</td></tr>"
         for case in cases
     )
     html = f"""<!doctype html>
@@ -264,3 +284,11 @@ def case_summary(case: dict[str, Any]) -> str:
         f"Priority {case['priority']} case on {case['host']} from {case['source_ip']} "
         f"with {case['alert_count']} alert(s), mapped to {case['mitre']}."
     )
+
+
+def _prepare_output(path: str | Path) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def _md(value: object) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")
