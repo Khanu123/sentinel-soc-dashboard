@@ -1,4 +1,7 @@
 import unittest
+import json
+import tempfile
+from pathlib import Path
 
 from sentinel_soc_dashboard.core import (
     Alert,
@@ -9,6 +12,7 @@ from sentinel_soc_dashboard.core import (
     load_config,
     recommendation,
     triage,
+    write_html,
 )
 from datetime import datetime
 
@@ -81,6 +85,35 @@ class SocTriageTests(unittest.TestCase):
 
         self.assertIn("alice", analyst_notes(alerts))
         self.assertIn("maintenance windows", false_positive_handling(alerts))
+
+    def test_partial_config_keeps_default_nested_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps({"sla": {"high": "Two hours"}}), encoding="utf-8")
+
+            config = load_config(path)
+
+        self.assertEqual(config.sla["high"], "Two hours")
+        self.assertEqual(config.sla["critical"], "Immediate escalation")
+        self.assertEqual(config.severity_weight["medium"], 45)
+
+    def test_invalid_severity_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "alerts.json"
+            path.write_text(json.dumps([{"timestamp": "2026-07-04T09:00:00", "title": "bad", "severity": "urgent"}]), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unsupported severity"):
+                load_alerts(path)
+
+    def test_html_report_escapes_alert_controlled_text(self):
+        alerts = [Alert(datetime(2026, 7, 4, 9, 0), "x", "high", "1.1.1.1", "<script>", "u", "Execution")]
+        cases = triage(alerts)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "nested" / "report.html"
+            write_html(alerts, cases, path)
+            report = path.read_text(encoding="utf-8")
+
+        self.assertIn("&lt;script&gt;", report)
+        self.assertNotIn("<td><script>", report)
 
 
 if __name__ == "__main__":
