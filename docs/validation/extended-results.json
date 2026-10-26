@@ -1,0 +1,76 @@
+{
+  "scope": "Deterministic synthetic regression exercise, not operational detection accuracy or a performance benchmark.",
+  "fixture_sha256": "ae56fb3530485a617da59725a3ae8682757cd1f108f90722b786023377c99246",
+  "alerts": 1014,
+  "legacy_cases": 54,
+  "bounded_cases": 504,
+  "checks": {
+    "fixture_has_1014_alerts": true,
+    "bounded_has_504_cases": true,
+    "legacy_has_54_cases": true,
+    "daily_background_sessions_separated": true,
+    "all_alerts_preserved": true,
+    "unknown_identities_kept_separate": true,
+    "scanner_context_preserved": true,
+    "scanner_still_requires_manual_review": true,
+    "attack_sequence_still_prioritised": true,
+    "shuffle_preserves_case_count": true
+  },
+  "passed": 10,
+  "total": 10,
+  "scanner_case": {
+    "source_ip": "198.51.100.20",
+    "host": "portal-lab",
+    "alert_count": 6,
+    "open_alert_count": 6,
+    "closed_alert_count": 0,
+    "top_severity": "high",
+    "tactics": "Reconnaissance",
+    "mitre": "T1595 - Active Scanning",
+    "priority": 100,
+    "sla": "Investigate within 4 hours",
+    "evidence": [
+      "Synthetic approved scanner finding",
+      "Synthetic approved scanner finding",
+      "Synthetic approved scanner finding",
+      "Synthetic approved scanner finding",
+      "Synthetic approved scanner finding",
+      "Synthetic approved scanner finding"
+    ],
+    "iocs": [],
+    "analyst_notes": "Validate the alert context against endpoint, identity, and network telemetry.",
+    "false_positive_handling": "Check before escalation: Exercise ticket LAB-042 authorises this source and target between 12:00 and 12:15 UTC. Verify scope and timing.",
+    "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity."
+  },
+  "attack_case": {
+    "source_ip": "203.0.113.44",
+    "host": "identity-lab",
+    "alert_count": 6,
+    "open_alert_count": 6,
+    "closed_alert_count": 0,
+    "top_severity": "critical",
+    "tactics": "Credential Access, Initial Access",
+    "mitre": "T1110 - Brute Force, T1078 - Valid Accounts",
+    "priority": 100,
+    "sla": "Immediate escalation",
+    "evidence": [
+      "Synthetic failed login",
+      "Synthetic failed login",
+      "Synthetic failed login",
+      "Synthetic failed login",
+      "Synthetic failed login",
+      "Synthetic successful login"
+    ],
+    "iocs": [],
+    "analyst_notes": "Review authentication and endpoint activity for: lab-admin.",
+    "false_positive_handling": "Compare with known maintenance windows, approved scanners, and expected admin activity.",
+    "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity."
+  },
+  "limitations": [
+    "No Splunk or Sentinel execution.",
+    "No real incidents or employee data.",
+    "High-volume benign activity can still reach priority 100.",
+    "Fixed windows can split related activity across a boundary.",
+    "Duplicate alerts are retained; upstream deduplication is not implemented."
+  ]
+}

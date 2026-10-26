@@ -1,8 +1,6 @@
-﻿# Sentinel SOC Dashboard
+# Sentinel SOC Dashboard
 
-![Project Type](https://img.shields.io/badge/Project-Flagship-blue)
 ![Focus](https://img.shields.io/badge/Focus-SOC%20Triage-green)
-![Difficulty](https://img.shields.io/badge/Difficulty-Advanced-orange)
 [![tests](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml/badge.svg)](https://github.com/Khanu123/sentinel-soc-dashboard/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Status](https://img.shields.io/badge/status-active_portfolio_project-brightgreen)
@@ -35,10 +33,22 @@ This is the project I would lead with in interviews because it shows:
 - Exportable reports for analyst and stakeholder communication.
 - Tests and sample data that make the project easy to evaluate.
 
+## Extended validation and investigation
+
+The default correlation now uses fixed 30-minute windows anchored to the first event. Missing source/host identities stay separate. Naive timestamps are interpreted as UTC; explicit timezone offsets are normalised. `triage(..., window_minutes=None)` is an unbounded comparison mode, with the same missing-identity safeguard.
+
+A deterministic 1,014-alert exercise covers repeated daily sessions, shuffled input, incomplete identities, approved scanning, and a suspicious login sequence. Local results: **10/10 exercise checks and 18/18 unit tests**. These counts are regression coverage, not operational detection accuracy or a live-platform claim.
+
+- [Investigation: approved scanner versus suspicious login](docs/validation/investigation.md)
+- [Generated validation results](docs/validation/extended-results.json)
+- Reproduce: `python scripts/validate_extended.py`
+
+Known limits include false-positive prioritisation (the approved scanner still scores 100), retained duplicate alerts, fixed-window boundaries, and simplified tactic-to-technique mappings. No live Microsoft Sentinel integration is claimed.
+
 ## Current Capabilities
 
 - Loads safe synthetic SOC alert data from JSON.
-- Groups related alerts into cases by source IP and affected host.
+- Groups alerts by source IP and affected host within fixed 30-minute windows.
 - Scores cases using top severity, alert volume, and tactic diversity.
 - Maps tactics to MITRE ATT&CK techniques.
 - Adds analyst notes and false-positive handling guidance.

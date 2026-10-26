@@ -4,7 +4,7 @@ import csv
 import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -96,14 +96,41 @@ def load_alerts(path: str | Path) -> list[Alert]:
     ]
 
 
-def triage(alerts: list[Alert], config: TriageConfig | None = None) -> list[dict[str, object]]:
+def triage(
+    alerts: list[Alert], config: TriageConfig | None = None, *,
+    window_minutes: float | None = 30,
+) -> list[dict[str, object]]:
+    """Group within fixed windows anchored to the first event, inclusive at the boundary.
+
+    Naive timestamps are interpreted as UTC. None reproduces legacy unbounded
+    grouping for comparison only. Incomplete identities are kept separate.
+    """
+    if window_minutes is not None:
+        import math
+        if not math.isfinite(window_minutes) or window_minutes <= 0:
+            raise ValueError("window_minutes must be finite and positive, or None")
     config = config or load_config()
-    grouped: dict[tuple[str, str], list[Alert]] = defaultdict(list)
-    for alert in alerts:
-        grouped[(alert.source_ip, alert.host)].append(alert)
+    def utc_timestamp(alert: Alert) -> datetime:
+        stamp = alert.timestamp
+        return stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None else stamp.astimezone(timezone.utc)
+
+    grouped: dict[tuple[str, str, int], list[Alert]] = defaultdict(list)
+    windows: dict[tuple[str, str], tuple[datetime, int]] = {}
+    for index, alert in enumerate(sorted(alerts, key=utc_timestamp)):
+        identity = (alert.source_ip, alert.host)
+        stamp = utc_timestamp(alert)
+        if not all(identity):
+            # Unknown identities are not evidence that two alerts are related.
+            grouped[(alert.source_ip, alert.host, -(index + 1))].append(alert)
+            continue
+        anchor, number = windows.get(identity, (stamp, 0))
+        if window_minutes is not None and (stamp - anchor).total_seconds() > window_minutes * 60:
+            anchor, number = stamp, number + 1
+        windows[identity] = (anchor, number)
+        grouped[(*identity, number)].append(alert)
 
     cases = []
-    for (source_ip, host), items in grouped.items():
+    for (source_ip, host, _window), items in grouped.items():
         severity_score = max(config.severity_weight.get(item.severity, 0) for item in items)
         volume_score = min(len(items) * config.volume_points_per_alert, config.max_volume_score)
         tactics = sorted({item.tactic for item in items})
