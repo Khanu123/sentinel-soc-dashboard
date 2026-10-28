@@ -75,25 +75,9 @@ def load_config(path: str | Path | None = None) -> TriageConfig:
 
 
 def load_alerts(path: str | Path) -> list[Alert]:
-    rows = json.loads(Path(path).read_text(encoding="utf-8"))
-    return [
-        Alert(
-            timestamp=datetime.fromisoformat(row["timestamp"]),
-            title=row["title"],
-            severity=row["severity"].lower(),
-            source_ip=row.get("source_ip", ""),
-            host=row.get("host", ""),
-            user=row.get("user", ""),
-            tactic=row.get("tactic", "unknown"),
-            status=row.get("status", "open"),
-            source=row.get("source", "siem"),
-            confidence=row.get("confidence", "medium"),
-            false_positive_hint=row.get("false_positive_hint", ""),
-            analyst_note=row.get("analyst_note", ""),
-            iocs=tuple(row.get("iocs", [])),
-        )
-        for row in rows
-    ]
+    """Load valid, normalised alerts and remove exact duplicates; fail on invalid rows."""
+    from .ingestion import load_alerts_report
+    return load_alerts_report(path).alerts
 
 
 def triage(
@@ -242,14 +226,16 @@ def write_markdown(cases: list[dict[str, object]], path: str | Path) -> None:
 
 
 def write_html(alerts: list[Alert], cases: list[dict[str, object]], path: str | Path) -> None:
+    from html import escape
     counts = summary(alerts)
+    safe_cases = [{key: escape(str(value)) for key, value in case.items()} for case in cases]
     rows = "\n".join(
         f"<tr><td>{case['priority']}</td><td>{case['source_ip']}</td><td>{case['host']}</td>"
         f"<td>{case['top_severity']}</td><td>{case['open_alert_count']} open / {case['alert_count']} total</td>"
         f"<td>{case['tactics']}</td><td>{case['mitre']}</td><td>{case['sla']}</td>"
         f"<td>{case['recommended_action']}<br><strong>Notes:</strong> {case['analyst_notes']}<br>"
         f"<strong>FP check:</strong> {case['false_positive_handling']}</td></tr>"
-        for case in cases
+        for case in safe_cases
     )
     html = f"""<!doctype html>
 <html lang="en">

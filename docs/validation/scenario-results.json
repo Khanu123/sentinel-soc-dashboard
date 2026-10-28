@@ -1,0 +1,119 @@
+{
+  "scope": "Synthetic authored exercises. Review decisions are narrative interpretations, not automated classifications.",
+  "input_quality": {
+    "input_rows": 15,
+    "accepted_alerts": 11,
+    "duplicates_removed": 1,
+    "rejected_rows": 3,
+    "issues": [
+      {
+        "row": 13,
+        "error": "Row 13: timestamp must include a date and time"
+      },
+      {
+        "row": 14,
+        "error": "Row 14: severity must be low, medium, high, or critical"
+      },
+      {
+        "row": 15,
+        "error": "Row 15: title must be a non-empty string"
+      }
+    ]
+  },
+  "checks": {
+    "strict_mode_rejects_invalid_rows": true,
+    "input_rows_15": true,
+    "accepted_alerts_11": true,
+    "one_duplicate_removed": true,
+    "three_rejected_rows_diagnosed": true,
+    "three_distinct_cases": true,
+    "suspicious_sequence_retained": true,
+    "maintenance_context_retained": true,
+    "ambiguous_context_retained": true,
+    "all_rows_accounted_for": true
+  },
+  "passed": 10,
+  "total": 10,
+  "cases": [
+    {
+      "source_ip": "203.0.113.44",
+      "host": "identity-lab",
+      "alert_count": 6,
+      "open_alert_count": 6,
+      "closed_alert_count": 0,
+      "top_severity": "critical",
+      "tactics": "Credential Access, Initial Access",
+      "mitre": "T1110 - Brute Force, T1078 - Valid Accounts",
+      "priority": 100,
+      "sla": "Immediate escalation",
+      "evidence": [
+        "Synthetic failed login",
+        "Synthetic failed login",
+        "Synthetic failed login",
+        "Synthetic failed login",
+        "Synthetic failed login",
+        "Synthetic successful login"
+      ],
+      "iocs": [],
+      "analyst_notes": "No approved activity in the exercise context. Verify identity and endpoint telemetry. No approved activity in the exercise context. Verify identity and endpoint telemetry. No approved activity in the exercise context. Verify identity and endpoint telemetry. No approved activity in the exercise context. Verify identity and endpoint telemetry. No approved activity in the exercise context. Verify identity and endpoint telemetry. No approved activity in the exercise context. Verify identity and endpoint telemetry.",
+      "false_positive_handling": "Compare with known maintenance windows, approved scanners, and expected admin activity.",
+      "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity.",
+      "exercise_review": {
+        "hypothesis": "Possible account compromise",
+        "review_decision": "Escalate for investigation",
+        "reason": "Failures followed by success, privileged account, and no authorised activity context; compromise is not confirmed."
+      }
+    },
+    {
+      "source_ip": "198.51.100.20",
+      "host": "maintenance-lab",
+      "alert_count": 3,
+      "open_alert_count": 3,
+      "closed_alert_count": 0,
+      "top_severity": "high",
+      "tactics": "Reconnaissance",
+      "mitre": "T1595 - Active Scanning",
+      "priority": 100,
+      "sla": "Investigate within 4 hours",
+      "evidence": [
+        "Synthetic scanner finding",
+        "Synthetic scanner finding",
+        "Synthetic scanner finding"
+      ],
+      "iocs": [],
+      "analyst_notes": "Validate the alert context against endpoint, identity, and network telemetry.",
+      "false_positive_handling": "Check before escalation: Authored ticket LAB-043 authorises this source and target from 10:00 to 10:15 UTC.",
+      "recommended_action": "Escalate immediately, isolate host, preserve evidence, and review account activity.",
+      "exercise_review": {
+        "hypothesis": "Possible hostile scanning",
+        "review_decision": "Authorised activity within this exercise",
+        "reason": "Authored ticket matches source, target, and time. Preserve context; do not create a permanent blanket allowlist."
+      }
+    },
+    {
+      "source_ip": "192.0.2.50",
+      "host": "unresolved-lab",
+      "alert_count": 2,
+      "open_alert_count": 2,
+      "closed_alert_count": 0,
+      "top_severity": "medium",
+      "tactics": "Execution",
+      "mitre": "T1059 - Command and Scripting Interpreter",
+      "priority": 66,
+      "sla": "Investigate within 1 business day",
+      "evidence": [
+        "Synthetic encoded administration command",
+        "Synthetic encoded administration command"
+      ],
+      "iocs": [],
+      "analyst_notes": "The exercise provides no parent process, command contents, or verified change ticket. The exercise provides no parent process, command contents, or verified change ticket.",
+      "false_positive_handling": "Check before escalation: An administrator says this may be maintenance; the claim is not corroborated.",
+      "recommended_action": "Queue for analyst review and correlate with recent authentication events.",
+      "exercise_review": {
+        "hypothesis": "Possible suspicious execution or administration",
+        "review_decision": "Unresolved: collect more evidence",
+        "reason": "A verbal maintenance explanation without command contents or parent-process evidence is insufficient for closure."
+      }
+    }
+  ]
+}

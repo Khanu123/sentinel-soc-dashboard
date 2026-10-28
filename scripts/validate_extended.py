@@ -64,7 +64,7 @@ def main():
         'limitations': ['No Splunk or Sentinel execution.', 'No real incidents or employee data.',
             'High-volume benign activity can still reach priority 100.',
             'Fixed windows can split related activity across a boundary.',
-            'Duplicate alerts are retained; upstream deduplication is not implemented.'],
+            'File ingestion removes exact normalised duplicates; direct triage callers manage input quality.'],
     }
     (ROOT / 'sample_data' / 'extended_alerts.json').write_text(fixture, encoding='utf-8')
     target = ROOT / 'docs' / 'validation'

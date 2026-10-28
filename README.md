@@ -37,13 +37,13 @@ This is the project I would lead with in interviews because it shows:
 
 The default correlation now uses fixed 30-minute windows anchored to the first event. Missing source/host identities stay separate. Naive timestamps are interpreted as UTC; explicit timezone offsets are normalised. `triage(..., window_minutes=None)` is an unbounded comparison mode, with the same missing-identity safeguard.
 
-A deterministic 1,014-alert exercise covers repeated daily sessions, shuffled input, incomplete identities, approved scanning, and a suspicious login sequence. Local results: **10/10 exercise checks and 18/18 unit tests**. These counts are regression coverage, not operational detection accuracy or a live-platform claim.
+A deterministic 1,014-alert exercise covers repeated daily sessions, shuffled input, incomplete identities, approved scanning, and a suspicious login sequence. Local results: **10/10 exercise checks and 34/34 unit tests**. These counts are regression coverage, not operational detection accuracy or a live-platform claim.
 
 - [Investigation: approved scanner versus suspicious login](docs/validation/investigation.md)
 - [Generated validation results](docs/validation/extended-results.json)
 - Reproduce: `python scripts/validate_extended.py`
 
-Known limits include false-positive prioritisation (the approved scanner still scores 100), retained duplicate alerts, fixed-window boundaries, and simplified tactic-to-technique mappings. No live Microsoft Sentinel integration is claimed.
+Known limits include false-positive prioritisation (the approved scanner still scores 100), fixed-window boundaries, and simplified tactic-to-technique mappings. No live Microsoft Sentinel integration is claimed.
 
 ## Current Capabilities
 
@@ -81,31 +81,36 @@ Example case fields:
 
 ## Quick Start
 
+Python 3.10+ is required; there are no third-party runtime packages.
+
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
-pip install -e .
-set PYTHONPATH=src
-python -m sentinel_soc_dashboard.cli
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+# macOS / Linux: source .venv/bin/activate
+python -m pip install .
+python -m sentinel_soc_dashboard.cli --alerts sample_data/alerts.json
 python -m unittest discover -s tests -v
 ```
 
-Use custom output paths:
+The sample generates five cases from eight alerts. All report paths default to the current directory; use `--html`, `--csv`, `--json`, and `--markdown` to select output files. Pass `--config config.example.json` for the supplied scoring example. Supply an explicit input path when running outside the checkout.
+
+### Input quality and contrasting investigations
+
+[Follow the complete input-to-report walkthrough](docs/validation/walkthrough.md), including suspicious activity, approved maintenance, and an unresolved case.
+
+- Strict input validation reports row-specific problems instead of silently assigning unknown severities zero weight.
+- Exact normalised duplicates are removed and counted; `--keep-duplicates` retains them for comparison.
+- Invalid rows fail a normal run. `--skip-invalid` explicitly enables partial loading; `--diagnostics input-quality.json` records accepted, duplicate, and rejected counts and row-level reasons.
+- Reports escape alert-derived HTML. This remains a local lab rather than a production ingestion service.
 
 ```bash
-python -m sentinel_soc_dashboard.cli ^
-  --alerts sample_data/alerts.json ^
-  --html docs/examples/soc_report.html ^
-  --csv docs/examples/soc_cases.csv ^
-  --json docs/examples/soc_cases.json ^
-  --markdown docs/examples/example_soc_report.md
+python scripts/validate_extended.py
+python scripts/validate_scenarios.py
+python -m sentinel_soc_dashboard.cli --alerts sample_data/investigation_scenarios.json --skip-invalid --diagnostics input-quality.json
 ```
 
-Use custom scoring:
-
-```bash
-python -m sentinel_soc_dashboard.cli --config config.example.json
-```
+The scenario input deliberately contains invalid rows: 15 rows become 11 accepted alerts, one removed duplicate, and three diagnosed rejections. Review [scenario results](docs/validation/scenario-results.json) for the three separate cases. The decisions are authored exercise interpretations, not automatic classifications.
 
 ## How It Helps a SOC Analyst
 
